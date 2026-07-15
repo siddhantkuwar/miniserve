@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+
+# Generated reports and benchmark data. Keep the directory, not machine-specific output.
+results/*.json
+results/*.csv
+results/*.jsonl
+!results/.gitkeep
+
+# Local model/cache directories.
+.cache/
+models/
