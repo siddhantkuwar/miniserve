@@ -2,7 +2,7 @@
 
 MiniServe is a learning-oriented local inference runtime built from first principles on Apple Silicon. The project starts with a manual MLX decoding loop and progressively adds KV caching, serving, scheduling, batching, quantization, profiling, and cross-architecture kernel work.
 
-The project requirements and phase gates live in [the master PRD](docs/MiniServe_Master_PRD_v5_1_Agent_Brain.md).
+The project requirements, learning notes, and architecture documents are intentionally local-only under `docs/` and are not published to GitHub.
 
 ## Phase 0 setup
 
@@ -23,7 +23,7 @@ src/miniserve/       Original MiniServe Python package
 tests/               Unit and integration tests
 tools/               Development and hardware utilities
 benchmarks/          Reproducible benchmark entry points
-docs/                Explanations, decisions, and the master PRD
+docs/                Local-only planning, learning, and architecture notes
 results/             Raw local measurements; generated files are ignored
 ```
 

@@ -5,6 +5,16 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 
+# Private local notes, planning, and architecture work. Never commit this folder.
+docs/
+
+# Local configuration and credentials. A deliberately sanitized example may be committed.
+.env
+.env.*
+!.env.example
+.envrc
+secrets/
+
 # Generated reports and benchmark data. Keep the directory, not machine-specific output.
 results/*.json
 results/*.csv
