@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 
 """Assignment 1: your causal multi-head self-attention reference.
 
@@ -102,5 +103,67 @@ print(_softmax_last_dim(hidden_states))
 9. return
 '''
 
-#def causal_self_attention(hidden_states, q_weights, k_weights, v_weights, num_heads):
+def causal_self_attention(hidden_states, q_weights, k_weights, v_weights, num_heads):
    
+   # validate input
+   B, T, D, Dh = validateAttentionInput(hidden_states, num_heads)
+   
+   # project Q/K/V
+   Q = torch.matmul(hidden_states, q_weights)
+   K = torch.matmul(hidden_states, k_weights)
+   V = torch.matmul(hidden_states, v_weights)
+   
+   # split heads
+   Q = Q.view(B, T, num_heads, Dh)
+   K = K.view(B, T, num_heads, Dh)
+   V = V.view(B, T, num_heads, Dh)
+   
+   Q = Q.transpose(1, 2)  # [B, T, H, Dh] -> [B, H, T, Dh]
+   K = K.transpose(1, 2)
+   V = V.transpose(1, 2)
+   
+   print("Q:", Q.shape)
+   print("K:", K.shape)
+   print("V:", V.shape)
+   
+   # compute scaled scores
+   scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(Dh)
+   
+   # apply causal mask
+   mask = torch.tril(torch.ones(T, T, dtype=torch.bool, device=scores.device))
+   scores = scores.masked_fill(~mask, float("-inf"))
+   
+   # softmax
+   scores = _softmax_last_dim(scores)
+   
+   # mix values
+   output = torch.matmul(scores, V)
+   
+   output = output.transpose(1, 2)  # [B, H, T, Dh] -> [B, T, H, Dh]
+   output = output.reshape(B, T, D)
+   
+   # merge heads
+   output = output.view(B, T, D)
+   
+   return output
+
+#main
+if __name__ == "__main__":
+   B, T, D = 2, 4, 8
+   num_heads = 2
+
+   hidden_states = torch.randn(B, T, D)
+
+   q_weights = torch.randn(D, D)
+   k_weights = torch.randn(D, D)
+   v_weights = torch.randn(D, D)
+
+   output = causal_self_attention(
+      hidden_states,
+      q_weights,
+      k_weights,
+      v_weights,
+      num_heads,
+   )
+
+   print("output:", output.shape)
