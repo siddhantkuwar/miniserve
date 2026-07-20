@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 import math
 
 """Assignment 1: your causal multi-head self-attention reference.
@@ -34,10 +33,7 @@ readable reference matters more than compact code or performance here.
 4. Calculate Dh = D // num_heads.
 '''
 
-hidden_states = torch.zeros((2, 4, 8))
-print(hidden_states)
-
-def validateAttentionInput(hidden_states, num_heads):
+def _validate_attention_input(hidden_states, num_heads):
    # check that hidden_states has exactly 3 dimensions
    if hidden_states.ndim != 3:
       raise ValueError("hidden_states must have exactly 3 dimensions")
@@ -45,7 +41,7 @@ def validateAttentionInput(hidden_states, num_heads):
    # read B, T, and D from its shape
    B, T, D = hidden_states.shape
    
-   # validate num_heads bc it cant when its 0 or -2 for some reason
+   # validate num_heads since head count must be positive to recieve hidden features
    if num_heads <= 0:
       raise ValueError("num_heads must be a positive integer")
    
@@ -58,8 +54,6 @@ def validateAttentionInput(hidden_states, num_heads):
    
    return B, T, D, Dh
 
-B, T, D, Dh = validateAttentionInput(hidden_states, 2)
-print(B, T, D, Dh)
 
 # function to convert scores into normalized probabilities along the final axis. 
 '''
@@ -88,7 +82,6 @@ def _softmax_last_dim(x):
    
    return x
 
-print(_softmax_last_dim(hidden_states))
 
 #function that contains the entire causal self-attention computation
 '''
@@ -106,7 +99,7 @@ print(_softmax_last_dim(hidden_states))
 def causal_self_attention(hidden_states, q_weights, k_weights, v_weights, num_heads):
    
    # validate input
-   B, T, D, Dh = validateAttentionInput(hidden_states, num_heads)
+   B, T, D, Dh = _validate_attention_input(hidden_states, num_heads)
    
    # project Q/K/V
    Q = torch.matmul(hidden_states, q_weights)
@@ -139,11 +132,9 @@ def causal_self_attention(hidden_states, q_weights, k_weights, v_weights, num_he
    # mix values
    output = torch.matmul(scores, V)
    
+   #transpose and reshape
    output = output.transpose(1, 2)  # [B, H, T, Dh] -> [B, T, H, Dh]
    output = output.reshape(B, T, D)
-   
-   # merge heads
-   output = output.view(B, T, D)
    
    return output
 
@@ -158,12 +149,6 @@ if __name__ == "__main__":
    k_weights = torch.randn(D, D)
    v_weights = torch.randn(D, D)
 
-   output = causal_self_attention(
-      hidden_states,
-      q_weights,
-      k_weights,
-      v_weights,
-      num_heads,
-   )
+   output = causal_self_attention(hidden_states, q_weights, k_weights, v_weights, num_heads,)
 
    print("output:", output.shape)
