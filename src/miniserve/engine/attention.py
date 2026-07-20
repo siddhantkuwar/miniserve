@@ -34,6 +34,7 @@ readable reference matters more than compact code or performance here.
 '''
 
 hidden_states = torch.zeros((2, 4, 8))
+print(hidden_states)
 
 def validateAttentionInput(hidden_states, num_heads):
    # check that hidden_states has exactly 3 dimensions
@@ -56,4 +57,50 @@ def validateAttentionInput(hidden_states, num_heads):
    
    return B, T, D, Dh
 
+B, T, D, Dh = validateAttentionInput(hidden_states, 2)
+print(B, T, D, Dh)
+
+# function to convert scores into normalized probabilities along the final axis. 
+'''
+1. subtract maximum for numerical stability
+2. exponentiate
+3. sum over the final dimension
+4. divide by the sum
+5. return
+'''
+def _softmax_last_dim(x):
+   
+   # calculate the maximum value along the last dimension
+   max_value = torch.amax(x, dim=-1, keepdim=True)
+   
+   # subtract the maximum value from x
+   x = x - max_value
+   
+   # apply the exponential function to x
+   x = torch.exp(x)
+   
+   # sum the exponential values along the last dimension
+   sum_exp = x.sum(dim=-1, keepdim=True)
+   
+   # divide x by the sum of the exponential values
+   x = x / sum_exp
+   
+   return x
+
+print(_softmax_last_dim(hidden_states))
+
+#function that contains the entire causal self-attention computation
+'''
+1. validate input
+2. project Q/K/V, shape of [B, T, D] -> [B, T, num_heads, Dh]
+3. split heads, shape of [B, T, num_heads, Dh] -> [B, num_heads, T, Dh]
+4. compute scaled scores, shape of [B, num_heads, T, Dh]
+5. apply causal mask, shape of [B, num_heads, T, Dh]
+6. softmax, shape of [B, num_heads, T, Dh]
+7. mix values, shape of [B, num_heads, T, Dh]
+8. merge heads, shape of [B, T, D]
+9. return
+'''
+
+#def causal_self_attention(hidden_states, q_weights, k_weights, v_weights, num_heads):
    
