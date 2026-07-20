@@ -1,3 +1,6 @@
+import torch
+import torch.nn as nn
+
 """Assignment 1: your causal multi-head self-attention reference.
 
 This file is intentionally a scaffold. Do not look for a hidden solution here:
@@ -30,7 +33,9 @@ readable reference matters more than compact code or performance here.
 4. Calculate Dh = D // num_heads.
 '''
 
-def functionOne(hidden_states, num_heads):
+hidden_states = torch.zeros((2, 4, 8))
+
+def validateAttentionInput(hidden_states, num_heads):
    # check that hidden_states has exactly 3 dimensions
    if hidden_states.ndim != 3:
       raise ValueError("hidden_states must have exactly 3 dimensions")
