@@ -45,7 +45,32 @@ def feed_forward_reference(hidden_states, up_weight, down_weight):
 
     Track `[batch, sequence, hidden] -> [..., mlp_hidden] -> [..., hidden]`.
     """
-    pass
+    expanded = hidden_states @ up_weight
+    #print("hidden_states shape:", hidden_states.shape)
+    #print("up_weight shape:", up_weight.shape)
+    #print("expanded shape:", expanded.shape)
+    
+    '''
+    test_gelu = torch.randn(2, 3, 12)
+    test_gelu_output = torch.nn.functional.gelu(test_gelu)
+    
+    print("test input shape: ", test_gelu.shape)
+    print("test gelu output shape: ", test_gelu_output.shape)
+    
+    test_gelu2 = torch.tensor([-3.0, -1.0, 0.0, 1.0, 3.0])
+    gelu_output2 = torch.nn.functional.gelu(test_gelu2)
+
+    print("input:", test_gelu2)
+    print("output:", gelu_output2)
+    '''
+    
+    activated = torch.nn.functional.gelu(expanded)
+    #print("activated shape: ", activated.shape)
+    
+    mlp_output = activated @ down_weight
+    #print("shrinked shape: ", shrinked.shape)
+    
+    return mlp_output
 
 
 # TODO: Compose pre-norm attention, residuals, pre-norm MLP, and residuals.
@@ -73,6 +98,12 @@ if __name__ == "__main__":
     bias = torch.zeros(D)
     epsilon = 1e-5
     
+    M = 12
+    up_weight = torch.randn(D, M)
+    down_weight = torch.randn(M, D)
+    
     output = layer_norm_reference(hidden_states, scale, bias, epsilon)
+    mlp_output = feed_forward_reference(hidden_states, up_weight, down_weight)
     
     print("output shape: ", output.shape)
+    print("mlp_output shape: ", mlp_output.shape)
