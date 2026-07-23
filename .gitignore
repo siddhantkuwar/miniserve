@@ -23,4 +23,4 @@ results/*.jsonl
 
 # Local model/cache directories.
 .cache/
-models/
+/models/
