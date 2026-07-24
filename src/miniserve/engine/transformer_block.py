@@ -1,21 +1,9 @@
-"""Assignment 2 scaffold: transformer block anatomy in PyTorch.
+#description + comments needed
 
-Implement a small pre-normalization transformer block only after you can draw
-the residual stream and state the shape at every boundary. This is a learning
-oracle, not MiniServe's final MLX model implementation.
-"""
 import torch
+from attention import causal_self_attention
 
-
-# TODO: Normalize the final hidden dimension and apply learned scale/bias.
 def layer_norm_reference(hidden_states, scale, bias, epsilon):
-    """Normalize the final hidden dimension and apply learned scale/bias.
-
-    Questions to answer first:
-    - Which dimensions are reduced to compute mean and variance?
-    - Why does epsilon exist?
-    - Which shape must scale and bias have for broadcasting?
-    """
     
     avg = torch.mean(hidden_states, dim=-1, keepdim=True)  # we want to first avg out the D vector, while 
     
@@ -39,12 +27,8 @@ def layer_norm_reference(hidden_states, scale, bias, epsilon):
     return output
 
 
-# TODO: Apply hidden expansion, GELU, and projection back to model width.
 def feed_forward_reference(hidden_states, up_weight, down_weight):
-    """Apply hidden expansion, GELU, and projection back to model width.
 
-    Track `[batch, sequence, hidden] -> [..., mlp_hidden] -> [..., hidden]`.
-    """
     expanded = hidden_states @ up_weight
     #print("hidden_states shape:", hidden_states.shape)
     #print("up_weight shape:", up_weight.shape)
@@ -73,7 +57,6 @@ def feed_forward_reference(hidden_states, up_weight, down_weight):
     return mlp_output
 
 
-# TODO: Compose pre-norm attention, residuals, pre-norm MLP, and residuals.
 def pre_norm_transformer_block(
     hidden_states,
     attention_fn,
@@ -81,14 +64,48 @@ def pre_norm_transformer_block(
     mlp_parameters,
     norm_parameters,
 ):
-    """Compose pre-norm attention, residuals, pre-norm MLP, and residuals.
+    
+    #unpacking all the params
+    q_weights = attention_parameters["q_weights"]
+    k_weights = attention_parameters["k_weights"]
+    v_weights = attention_parameters["v_weights"]
+    num_heads = attention_parameters["num_heads"]
+    
+    up_weight = mlp_parameters["up_weight"]
+    down_weight = mlp_parameters["down_weight"]
 
-    Keep each residual addition visible. Do not hide the order inside a generic
-    sequential container until you can explain why pre-norm differs from
-    post-norm.
-    """
-    pass
+    norm1_scale = norm_parameters["norm1_scale"]
+    norm1_bias = norm_parameters["norm1_bias"]
 
+    norm2_scale = norm_parameters["norm2_scale"]
+    norm2_bias = norm_parameters["norm2_bias"]
+
+    epsilon = norm_parameters["epsilon"]
+    
+    #LN1
+    normalized_x = layer_norm_reference(hidden_states, norm1_scale, norm1_bias, epsilon)
+    #print("normalized_x shape: ", normalized_x.shape)
+    
+    attention_update = attention_fn(normalized_x, q_weights, k_weights, v_weights, num_heads)
+    #print("attention update shape: ", attention_update.shape)
+    
+    x1 = hidden_states + attention_update
+    #print("x1 shape: ", x1.shape)
+    
+    #LN2
+    second_norm_x = layer_norm_reference(x1, norm2_scale, norm2_bias, epsilon)
+    #print("second_norm_x shape: ", second_norm_x.shape)
+    
+    mlp_update = feed_forward_reference(second_norm_x, up_weight, down_weight)
+    #print("mlp_update shape: ", mlp_update.shape)
+    
+    x2 = x1 + mlp_update
+    #print("x2 shape: ", x2.shape)
+    
+    return x2
+
+
+#main
 if __name__ == "__main__":
     B, T, D = 2, 3, 4
     
@@ -102,8 +119,35 @@ if __name__ == "__main__":
     up_weight = torch.randn(D, M)
     down_weight = torch.randn(M, D)
     
+    q_weight = torch.randn(D, D)
+    k_weight = torch.randn(D, D)
+    v_weight = torch.randn(D, D)
+    num_heads = 1
+    
     output = layer_norm_reference(hidden_states, scale, bias, epsilon)
     mlp_output = feed_forward_reference(hidden_states, up_weight, down_weight)
+    norm_output = pre_norm_transformer_block(
+        hidden_states,
+        attention_fn=causal_self_attention,
+        attention_parameters={
+            "q_weights": q_weight,
+            "k_weights": k_weight,
+            "v_weights": v_weight,
+            "num_heads": num_heads,
+        },
+        mlp_parameters={
+            "up_weight": up_weight,
+            "down_weight": down_weight,
+        },
+        norm_parameters={
+            "norm1_scale": scale,
+            "norm1_bias": bias,
+            "norm2_scale": scale,
+            "norm2_bias": bias,
+            "epsilon": epsilon,
+        },
+    )
     
     print("output shape: ", output.shape)
     print("mlp_output shape: ", mlp_output.shape)
+    print("norm_output shape: ", norm_output.shape)
