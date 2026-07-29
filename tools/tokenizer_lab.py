@@ -1,4 +1,6 @@
 """Assignment 3 scaffold: inspect tokenizer and prompt-format contracts."""
+from sympy import true
+from torch._dynamo.eval_frame import add_skip_reason
 from transformers import AutoTokenizer
 
 # TODO: Report BOS, EOS, padding, unknown-token IDs and model max length.
@@ -82,7 +84,38 @@ def inspect_round_trip(tokenizer, text):
 # TODO: Compare plain encoding with the model's chat-template token sequence.
 def compare_plain_and_chat_prompts(tokenizer, text):
     """Compare plain encoding with the model's chat-template token sequence."""
-    pass
+    plain_ids = tokenizer.encode(text, add_special_tokens=False)
+    print("plain ids: ", plain_ids)
+    print("plain token count: ", len(plain_ids))
+    
+    msgs = [
+        {
+            "role": "user",
+            "content": text
+        }
+    ]
+    print("msgs: ", msgs)
+    
+    rendered_chat = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+    print("rendered chat: ", repr(rendered_chat))
+    
+    chat_ids = tokenizer.apply_chat_template(msgs, tokenize=True, add_generation_prompt=True)
+    print("chat ids: ", chat_ids)
+    print("chat token count: ", len(chat_ids))
+    
+    print("chat_ids type: ", type(chat_ids))
+    print("chat_ids keys: ", chat_ids.keys())
+    
+    chat_token_ids = chat_ids["input_ids"]
+    print("The actual length of chat_ids: ", len(chat_token_ids))
+    
+    same_ids = True if (plain_ids == chat_token_ids) else False
+    print("Same ID? ", same_ids)
+    
+    length_diff = len(chat_token_ids) - len(plain_ids)
+    print("length difference: ", length_diff)
+    
+    return plain_ids
 
 
 # TODO: Return conceptual inputs `tokens[:-1]` and labels `tokens[1:]`.
@@ -100,7 +133,7 @@ def main():
     
     inspect_special_tokens(tokenizer)
     inspect_round_trip(tokenizer, text)
-    
+    compare_plain_and_chat_prompts(tokenizer, text)
 
 if __name__ == "__main__":
     main()
