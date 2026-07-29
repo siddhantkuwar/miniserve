@@ -1,11 +1,8 @@
-"""Assignment 3 scaffold: inspect tokenizer and prompt-format contracts."""
 from sympy import true
 from torch._dynamo.eval_frame import add_skip_reason
 from transformers import AutoTokenizer
 
-# TODO: Report BOS, EOS, padding, unknown-token IDs and model max length.
 def inspect_special_tokens(tokenizer):
-    """Report BOS, EOS, padding, unknown-token IDs and model max length."""
     
     '''
     noob way of doing ts:
@@ -65,9 +62,7 @@ def inspect_special_tokens(tokenizer):
     return report
     
 
-# TODO: Encode and decode text, then record where round-trip text can differ.
 def inspect_round_trip(tokenizer, text):
-    """Encode and decode text, then record where round-trip text can differ."""
     token_ids = tokenizer.encode(text)
     print("Token IDS: ", token_ids)
     
@@ -81,9 +76,7 @@ def inspect_round_trip(tokenizer, text):
     return is_exact_match
 
 
-# TODO: Compare plain encoding with the model's chat-template token sequence.
 def compare_plain_and_chat_prompts(tokenizer, text):
-    """Compare plain encoding with the model's chat-template token sequence."""
     plain_ids = tokenizer.encode(text, add_special_tokens=False)
     print("plain ids: ", plain_ids)
     print("plain token count: ", len(plain_ids))
@@ -115,25 +108,29 @@ def compare_plain_and_chat_prompts(tokenizer, text):
     length_diff = len(chat_token_ids) - len(plain_ids)
     print("length difference: ", length_diff)
     
-    return plain_ids
+    return length_diff
 
 
-# TODO: Return conceptual inputs `tokens[:-1]` and labels `tokens[1:]`.
-def build_shifted_next_token_pairs(token_ids):
-    """Return conceptual inputs `tokens[:-1]` and labels `tokens[1:]`."""
-    pass
-
-
-# TODO: Load only the tokenizer and print one small, annotated inspection.
-def main():
-    """Load only the tokenizer and print one small, annotated inspection."""
+def build_shifted_next_token_pairs(tokenizer, text):
+    token_ids = tokenizer.encode(text, add_special_tokens=False,)
     
+    inputs = token_ids[:-1]
+    labels = token_ids[1:]
+    
+    print("inputs: ", inputs)
+    print("labels: ", labels)
+    
+    return inputs, labels
+
+
+def main():
     text = "What is the capital of France?"
     tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct")
     
     inspect_special_tokens(tokenizer)
     inspect_round_trip(tokenizer, text)
     compare_plain_and_chat_prompts(tokenizer, text)
+    build_shifted_next_token_pairs(tokenizer, text)
 
 if __name__ == "__main__":
     main()
