@@ -35,7 +35,10 @@ def select_greedy_token(next_token_logits):
 # TODO: Decide whether EOS or the explicit generation budget ended decoding.
 def should_stop(token_id, eos_token_id, generated_count, max_new_tokens):
     """Decide whether EOS or the explicit generation budget ended decoding."""
-    pass
+    if (token_id == eos_token_id or generated_count >= max_new_tokens):
+        return True
+    
+    return False
 
 
 # TODO: Append exactly one selected token per loop iteration and return the trace.
@@ -49,6 +52,7 @@ def main():
     """Run one deterministic toy prompt and print each decoding step."""
     token_ids = [0, 1, 2, 3, 4, 5, 6]
     V = 9
+    eos_token_id = 8
     
     transition_logits = torch.full((V, V), -10.0)
     transition_logits[0, 1] = 10.0  # What -> is
@@ -65,16 +69,24 @@ def main():
     #print("winning next ID: ", torch.argmax(transition_logits[6]))
     
     all_logits = toy_forward(token_ids, transition_logits)
-    #last_position_logits = all_logits[-1]
+
     next_token_logits = all_logits[-1]
-
-    #print("last position logits:", last_position_logits)
-    #print("winning next ID:", torch.argmax(last_position_logits))
     print("next token logits shape:", next_token_logits.shape)
-    
-    next_token_id = select_greedy_token(next_token_logits)
 
+    next_token_id = select_greedy_token(next_token_logits)
     print("selected next token:", next_token_id)
+    
+    #stop = should_stop(next_token_id, eos_token_id, generated_count, max_new_tokens)
+    
+    #testing the stop func
+    result = should_stop(
+        token_id=7,
+        eos_token_id=8,
+        generated_count=1,
+        max_new_tokens=5,
+    )
+
+    print("stop func test result: ", result)
     
     
 
