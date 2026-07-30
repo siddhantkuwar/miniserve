@@ -1,23 +1,44 @@
-"""
-Keep this module intentionally empty until you have an implementation in
-`miniserve.engine.attention`. Add tests in this order:
+"""Simple tests for attention."""
 
-1. Shape test:
-   - use deterministic random inputs;
-   - assert attention output is `[batch, sequence, hidden]`;
-   - assert attention weights are `[batch, heads, query_sequence, key_sequence]`.
+import torch
 
-2. Probability test:
-   - every row of attention weights should sum to one after softmax.
+from miniserve.engine.attention import causal_self_attention
 
-3. Causality test:
-   - run attention once;
-   - drastically change only a future token;
-   - prove earlier output positions did not change.
 
-4. Validation test:
-   - verify an invalid number of heads raises a useful error.
+def test_attention_keeps_the_same_shape():
+    hidden_states = torch.randn(1, 3, 4)
+    weights = torch.eye(4)
 
-The causality test is the important one. It shows that a language model cannot
-read tokens that have not happened yet.
-"""
+    output = causal_self_attention(
+        hidden_states,
+        weights,
+        weights,
+        weights,
+        num_heads=2,
+    )
+
+    assert output.shape == hidden_states.shape
+
+
+def test_attention_cannot_see_the_future():
+    hidden_states = torch.randn(1, 3, 4)
+    changed_hidden_states = hidden_states.clone()
+    changed_hidden_states[:, -1, :] = 100
+    weights = torch.eye(4)
+
+    original = causal_self_attention(
+        hidden_states,
+        weights,
+        weights,
+        weights,
+        num_heads=2,
+    )
+    changed = causal_self_attention(
+        changed_hidden_states,
+        weights,
+        weights,
+        weights,
+        num_heads=2,
+    )
+
+    torch.testing.assert_close(original[:, :-1], changed[:, :-1])

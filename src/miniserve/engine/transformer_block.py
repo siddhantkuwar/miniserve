@@ -1,11 +1,14 @@
 #description + comments needed
 
 import torch
-from attention import causal_self_attention
+
+from .attention import causal_self_attention
+
 
 def layer_norm_reference(hidden_states, scale, bias, epsilon):
     
-    avg = torch.mean(hidden_states, dim=-1, keepdim=True)  # we want to first avg out the D vector, while 
+    # Average the hidden vector while preserving its dimension.
+    avg = torch.mean(hidden_states, dim=-1, keepdim=True)
     
     center = hidden_states - avg
     var = torch.mean(center ** 2, dim=-1, keepdim=True)

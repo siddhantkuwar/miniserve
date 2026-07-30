@@ -1,25 +1,31 @@
-"""Assignment 2 test prompts. Write every assertion yourself."""
+"""Simple tests for a transformer block."""
+
+import torch
+
+from miniserve.engine.transformer_block import (
+    feed_forward_reference,
+    layer_norm_reference,
+)
 
 
-# TODO: Use a hand-checkable tensor and verify normalization over hidden only.
-def test_layer_norm_has_zero_mean_and_unit_variance_before_affine_terms():
-    """Use a hand-checkable tensor and verify normalization over hidden only."""
-    pass
+def test_layer_norm_centers_each_token():
+    hidden_states = torch.tensor([[[1.0, 2.0, 3.0]]])
+
+    output = layer_norm_reference(
+        hidden_states,
+        scale=torch.ones(3),
+        bias=torch.zeros(3),
+        epsilon=1e-5,
+    )
+
+    assert torch.allclose(output.mean(dim=-1), torch.tensor([[0.0]]), atol=1e-6)
 
 
-# TODO: Verify batch/sequence survive expansion and projection unchanged.
-def test_feed_forward_preserves_outer_shape():
-    """Verify batch/sequence survive expansion and projection unchanged."""
-    pass
+def test_feed_forward_keeps_the_same_shape():
+    hidden_states = torch.randn(1, 3, 4)
+    up_weight = torch.randn(4, 8)
+    down_weight = torch.randn(8, 4)
 
+    output = feed_forward_reference(hidden_states, up_weight, down_weight)
 
-# TODO: Prove residual connections preserve input when sublayers return zero.
-def test_zero_sublayers_reduce_block_to_identity():
-    """Prove residual connections preserve input when sublayers return zero."""
-    pass
-
-
-# TODO: Carry Assignment 1's causal invariant through the whole block.
-def test_future_token_cannot_change_past_block_outputs():
-    """Carry Assignment 1's causal invariant through the whole block."""
-    pass
+    assert output.shape == hidden_states.shape

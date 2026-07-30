@@ -1,5 +1,7 @@
-import torch
 import math
+
+import torch
+
 
 # function to recieve hidden_states and it has the shape of [B, T, D]
 def _validate_attention_input(hidden_states, num_heads):
