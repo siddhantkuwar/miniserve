@@ -22,7 +22,7 @@ def toy_forward(token_ids, transition_logits):
 def select_greedy_token(next_token_logits):
     """Return the token ID with the largest score along the vocabulary axis."""
     winning_index = torch.argmax(next_token_logits)
-    token_id = 
+    token_id = winning_index.item()
     
     print("winning index tensor:", winning_index)
     print("winning index type:", type(winning_index))
