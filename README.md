@@ -1,12 +1,48 @@
 # MiniServe
 
-MiniServe is a learning-oriented local inference runtime built from first principles on Apple Silicon. The project starts with a manual MLX decoding loop and progressively adds KV caching, serving, scheduling, batching, quantization, profiling, and cross-architecture kernel work.
+MiniServe is a small, from-scratch language-model inference runtime for Apple
+Silicon. It is intentionally focused on the systems path between a tokenized
+request and a streamed response: model execution, KV-cache ownership, request
+scheduling, batching, memory allocation, measurement, and one custom Metal
+attention backend.
 
-The project requirements, learning notes, and architecture documents are intentionally local-only under `docs/` and are not published to GitHub.
+The target workload is a pinned 4-bit Qwen2.5 0.5B model on an M2 Pro MacBook
+Pro with bounded context and concurrency. `mlx-lm` may load architecture
+definitions and weights, but MiniServe owns generation, request state, cache
+state, scheduling, measurements, and optimized execution.
 
-## Phase 0 setup
+## Current push
 
-This repository currently contains the Phase 0 foundation. The first milestone is a manual, token-by-token decoder for a small pretrained model. The environment is managed with `uv` and targets native ARM Python 3.12.
+The project is organized as a six-week engineering push:
+
+1. Run deterministic real-model generation and integrate a correct KV cache.
+2. Serve concurrent streaming requests with static and continuous batching.
+3. Own memory through a logical block allocator and compare 4-bit/8-bit paths.
+4. Build a concurrent-load benchmark and a bounded toy MoE experiment.
+5. Integrate a custom Metal decode-attention backend into the serving path.
+6. Publish reproducible measurements, architecture, limitations, and a demo.
+
+GitHub issues are the public engineering plan. Private prerequisites, learning
+notes, and architecture work remain under `docs/`, which is deliberately
+ignored by Git.
+
+## Active foundation work
+
+Four existing learning exercises remain active because they directly unblock
+the runtime:
+
+- Assignment 5: understand MLX lazy execution and honest timing.
+- Assignment 6: load the pinned model behind a narrow adapter.
+- Assignment 7: own deterministic uncached greedy generation.
+- Assignment 9: prove exact golden-token parity against an isolated oracle.
+
+The earlier attention, transformer-block, tokenizer, and toy-decoder work stays
+as completed foundation code. Later assignment scaffolds were removed; their
+requirements now live in product-oriented GitHub issues.
+
+## Setup
+
+The environment is managed with `uv` and targets native ARM Python 3.12.
 
 ```bash
 uv sync
@@ -19,14 +55,40 @@ The hardware command writes a machine-readable report to `results/hardware.json`
 ## Repository layout
 
 ```text
-src/miniserve/       Original MiniServe Python package
-tests/               Unit and integration tests
-tools/               Development and hardware utilities
-benchmarks/          Reproducible benchmark entry points
-docs/                Local-only planning, learning, and architecture notes
-results/             Raw local measurements; generated files are ignored
+src/miniserve/engine/       Generation, decode, batching, and scheduling
+src/miniserve/models/       Model-specific adapter boundary
+src/miniserve/cache/        Contiguous and logical block-managed KV storage
+src/miniserve/serving/      Request lifecycle and model-owning executor
+src/miniserve/api/          Local streaming HTTP boundary
+src/miniserve/quantization/ Reference and MLX-native quantization paths
+src/miniserve/kernels/      Custom Metal attention backend
+tests/                      Focused unit and end-to-end correctness tests
+benchmarks/                 Reproducible latency and throughput entry points
+tools/                      Development, oracle, and hardware utilities
+docs/                       Local-only learning and architecture notes
+results/                    Ignored raw measurements
 ```
 
-## Provenance rule
+Directories are added when their owning issue begins; the repository does not
+carry empty implementation scaffolds for future work.
 
-LeetLLM and `mlx-lm` are learning resources and correctness oracles. MiniServe's generation loop, request state, cache ownership, scheduler, measurements, and kernels must remain original code.
+## Runtime boundaries
+
+- One process loads one model and owns accelerator execution.
+- Waiting requests do not own KV-cache capacity.
+- Every admitted request has explicit lifecycle and cache ownership.
+- Benchmarks force MLX evaluation and preserve raw samples.
+- The logical block allocator manages MLX arrays, not macOS physical pages.
+- The MLX and Metal attention backends obey one numerical contract.
+- `mlx_lm.generate()` and `mlx_lm.server()` are oracles, never runtime paths.
+
+## Initial safety limits
+
+- Model: `mlx-community/Qwen2.5-0.5B-Instruct-4bit`
+- Context: 1,024 tokens
+- Generation: 128 tokens
+- Active requests: 4
+- Waiting requests: 16
+
+These are conservative defaults for the target 16 GB machine. Any increase
+must be justified by measured memory pressure and cache accounting.
