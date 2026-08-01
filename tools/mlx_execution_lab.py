@@ -1,10 +1,23 @@
-"""Assignment 5 scaffold: compare PyTorch eager execution with MLX execution."""
+from sympy import approximants
+import torch
+import torch.nn.functional as F
+import mlx.core as mx
+import mlx.nn as nn
+
+from miniserve.engine.transformer_block import down_weight
 
 
 # TODO: Run the tiny MLP using PyTorch tensor operations and fixed parameters.
 def build_equivalent_torch_mlp(parameters, inputs):
     """Run the tiny MLP using PyTorch tensor operations and fixed parameters."""
-    pass
+    up_weight = parameters["up_weight"]
+    down_weight = parameters["down_weight"]
+    
+    expanded = inputs @ up_weight
+    activated = F.GELU(expanded, approximants=None)
+    output = activated @ down_weight
+    
+    return output
 
 
 # TODO: Run the same equations and parameters with MLX arrays.
