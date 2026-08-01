@@ -5,9 +5,7 @@ import mlx.nn as nn
 import time
 
 
-# TODO: Run the tiny MLP using PyTorch tensor operations and fixed parameters.
 def build_equivalent_torch_mlp(parameters, inputs):
-    """Run the tiny MLP using PyTorch tensor operations and fixed parameters."""
     up_weight = parameters["up_weight"]
     down_weight = parameters["down_weight"]
     
@@ -18,9 +16,7 @@ def build_equivalent_torch_mlp(parameters, inputs):
     return output
 
 
-# TODO: Run the same equations and parameters with MLX arrays.
 def build_equivalent_mlx_mlp(parameters, inputs):
-    """Run the same equations and parameters with MLX arrays."""
     up_weight = parameters["up_weight"]
     down_weight = parameters["down_weight"]
     
@@ -31,9 +27,7 @@ def build_equivalent_mlx_mlp(parameters, inputs):
     return output
 
 
-# TODO: Separate graph construction from execution and identify forced evaluation.
 def demonstrate_lazy_evaluation(array):
-    """Separate graph construction from execution and identify forced evaluation."""
     construction_start = time.perf_counter()
     
     result = mx.square(array) + 1.0
@@ -52,21 +46,34 @@ def demonstrate_lazy_evaluation(array):
     }
 
 
-# TODO: Execute the same operation on MLX CPU and GPU streams without copying arrays.
 def run_on_stream(operation, inputs, stream):
-    """Execute the same operation on MLX CPU and GPU streams without copying arrays."""
-    pass
+    with mx.stream(stream):
+        result = operation(inputs)
+
+    return result
 
 
-# TODO: Warm the exact shape, force `mx.eval`, and return raw elapsed samples.
 def time_with_evaluation(operation, inputs, warmups, repeats):
-    """Warm the exact shape, force `mx.eval`, and return raw elapsed samples."""
-    pass
+    samples = []
+
+    for _ in range(warmups):
+        result = operation(inputs)
+        mx.eval(result)
+
+    for _ in range(repeats):
+        start = time.perf_counter()
+
+        result = operation(inputs)
+        mx.eval(result)
+
+        end = time.perf_counter()
+
+        samples.append(end - start)
+
+    return samples
 
 
-# TODO: Print parity, device, lazy-evaluation, and bad-vs-correct timing evidence.
 def main():
-    """Print parity, device, lazy-evaluation, and bad-vs-correct timing evidence."""
     torch_inputs = torch.tensor(
         [
             [
@@ -147,6 +154,7 @@ def main():
     print("MLX output shape:", mlx_output.shape)
     print("MLX output:")
     print(mlx_output)
+    print("\n")
     
     
     lazy_demo = demonstrate_lazy_evaluation(mlx_inputs)
@@ -161,8 +169,48 @@ def main():
         lazy_demo["evaluation_seconds"],
         "seconds",
     )
-    print("Result:")
+    print("\nResult:")
     print(lazy_demo["result"])
+    
+    cpu_stream = mx.default_stream(mx.cpu)
+    gpu_stream = mx.default_stream(mx.gpu)
+
+    cpu_output = run_on_stream(
+        lambda x: build_equivalent_mlx_mlp(mlx_parameters, x),
+        mlx_inputs,
+        cpu_stream,
+    )
+
+    gpu_output = run_on_stream(
+        lambda x: build_equivalent_mlx_mlp(mlx_parameters, x),
+        mlx_inputs,
+        gpu_stream,
+    )
+
+    mx.eval(cpu_output, gpu_output)
+
+    print("CPU output:")
+    print(cpu_output)
+
+    print("GPU output:")
+    print(gpu_output)
+    
+    timing_samples = time_with_evaluation(
+        lambda x: build_equivalent_mlx_mlp(mlx_parameters, x),
+        mlx_inputs,
+        warmups=3,
+        repeats=10,
+    )
+
+    print("\nTrue MLX Timing: ")
+
+    for index, sample in enumerate(timing_samples, start=1):
+        print(f"Run {index}: {sample * 1_000:.6f} ms")
+
+    print(
+        f"Average: "
+        f"{sum(timing_samples) / len(timing_samples) * 1_000:.6f} ms"
+    )
 
 
 if __name__ == "__main__":
