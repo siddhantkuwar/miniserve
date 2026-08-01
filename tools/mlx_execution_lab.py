@@ -14,7 +14,7 @@ def build_equivalent_torch_mlp(parameters, inputs):
     down_weight = parameters["down_weight"]
     
     expanded = inputs @ up_weight
-    activated = F.GELU(expanded, approximants=None)
+    activated = F.GELU(expanded, approximate=None)
     output = activated @ down_weight
     
     return output
@@ -23,7 +23,7 @@ def build_equivalent_torch_mlp(parameters, inputs):
 # TODO: Run the same equations and parameters with MLX arrays.
 def build_equivalent_mlx_mlp(parameters, inputs):
     """Run the same equations and parameters with MLX arrays."""
-    pass
+    
 
 
 # TODO: Separate graph construction from execution and identify forced evaluation.
