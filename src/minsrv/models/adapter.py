@@ -5,6 +5,7 @@ forward execution, generation, cache ownership, and measurements.
 """
 from mlx_lm import load
 import inspect
+import mlx.core as mx
 
 #print(inspect.getsource(load))
 
@@ -30,12 +31,37 @@ class ModelAdapter:
     # TODO: Convert a plain prompt to a batch-shaped MLX token array.
     def encode_plain_prompt(self, prompt):
         """Convert a plain prompt to a batch-shaped MLX token array."""
-        pass
+        if not isinstance(prompt, str):
+            raise ValueError("prompt must be a string")
+        
+        if not prompt:
+            raise ValueError("prompt can't be empty")
+        
+        token_ids = self.tokenizer.encode(prompt, add_special_tokens=False)
+        token_array = mx.array([token_ids], dtype=mx.int32)
+        
+        return token_array
 
     # TODO: Apply the tokenizer chat template explicitly and return token IDs.
     def encode_chat_prompt(self, messages):
         """Apply the tokenizer chat template explicitly and return token IDs."""
-        pass
+        if not isinstance(messages, list):
+            raise ValueError("messages must be a list")
+        
+        if not messages:
+            raise ValueError("messages can't be empty")
+        
+        for message in messages:
+            if not isinstance(message, dict):
+                raise ValueError("message must be a dictionary")
+            
+            if "role" not in message or "content" not in message:
+                raise ValueError("message must contain a role and content")
+        
+        token_ids = self.tokenizer.apply_chat_template(messages, add_special_tokens=False, tokenize=True, add_generation_prompt=True)
+        token_array = mx.array([token_ids], dtype=mx.int32)
+                
+        return token_array
 
     # TODO: Run exactly one model forward call and return normalized logits/cache output.
     def forward(self, token_ids, cache=None):
@@ -85,10 +111,13 @@ class ModelAdapter:
             "quantization_group_size": quantization.get(
                 "group_size"
             ),
+            "query_heads_per_kv_head": num_attention_heads // config.get("num_key_value_heads"),
+            "kv_cache_elements_per_token_per_layer": 2 * config.get("num_key_value_heads") * head_dim,
         }
 
 
 def main():
+    #init and load
     adapter = ModelAdapter.load(
         model_id="mlx-community/Qwen2.5-0.5B-Instruct-4bit",
         model_revision="a5339a4", #this is the commit hash for the model
@@ -102,10 +131,37 @@ def main():
     print("config type:", type(adapter.config))
     print("architecture:", adapter.config.get("architectures"))
     
+    #metadata
     print("\nMetadata:")
     metadata = adapter.metadata()
     for key, value in metadata.items():
         print(f"{key}: {value}")
+        
+    #plain prompt
+    plain_prompt = "What is the capital of France?"
+    plain_ids = adapter.encode_plain_prompt(plain_prompt)
+
+    print("\nPlain prompt:")
+    print("text:", plain_prompt)
+    print("token IDs:", plain_ids)
+    print("shape:", plain_ids.shape)
+    print("dtype:", plain_ids.dtype)
+
+    #chat prompt
+    messages = [
+        {
+            "role": "user",
+            "content": "What is the capital of France?",
+        }
+    ]
+
+    chat_ids = adapter.encode_chat_prompt(messages)
+
+    print("\nChat prompt:")
+    print("messages:", messages)
+    print("token IDs:", chat_ids)
+    print("shape:", chat_ids.shape)
+    print("dtype:", chat_ids.dtype)
     
 if __name__ == "__main__":
     main()
