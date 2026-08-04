@@ -3,21 +3,29 @@
 `mlx-lm` may load the architecture and weights. MiniServe owns prompt handling,
 forward execution, generation, cache ownership, and measurements.
 """
+from mlx_lm import load
+import inspect
 
+#print(inspect.getsource(load))
 
 class ModelAdapter:
     """Expose only the model capabilities MiniServe needs."""
 
     # TODO: Store loaded objects and reproducibility metadata without loading again.
-    def __init__(self, model, tokenizer, model_id, model_revision):
+    def __init__(self, model, tokenizer, model_id, model_revision, config):
         """Store loaded objects and reproducibility metadata without loading again."""
-        pass
+        self.model = model
+        self.tokenizer = tokenizer
+        self.model_id = model_id
+        self.model_revision = model_revision
+        self.config = config
 
     # TODO: Load model/tokenizer once and return a configured adapter.
     @classmethod
     def load(cls, model_id, model_revision=None):
         """Load model/tokenizer once and return a configured adapter."""
-        pass
+        model, tokenizer, config = load(model_id, revision=model_revision, return_config=True)
+        return cls(model=model, tokenizer=tokenizer, model_id=model_id, model_revision=model_revision, config=config)
 
     # TODO: Convert a plain prompt to a batch-shaped MLX token array.
     def encode_plain_prompt(self, prompt):
@@ -43,3 +51,20 @@ class ModelAdapter:
     def metadata(self):
         """Return model ID, revision, dtype/quantization, vocabulary, and dimensions."""
         pass
+
+def main():
+    adapter = ModelAdapter.load(
+        model_id="mlx-community/Qwen2.5-0.5B-Instruct-4bit",
+        model_revision="a5339a4", #this is the commit hash for the model
+    )
+
+    print("adapter type:", type(adapter))
+    print("model type:", type(adapter.model))
+    print("tokenizer type:", type(adapter.tokenizer))
+    print("model ID:", adapter.model_id)
+    print("revision:", adapter.model_revision)
+    print("config type:", type(adapter.config))
+    print("architecture:", adapter.config.get("architectures"))
+    
+if __name__ == "__main__":
+    main()
