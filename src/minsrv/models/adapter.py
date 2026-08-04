@@ -50,7 +50,43 @@ class ModelAdapter:
     # TODO: Return model ID, revision, dtype/quantization, vocabulary, and dimensions.
     def metadata(self):
         """Return model ID, revision, dtype/quantization, vocabulary, and dimensions."""
-        pass
+        config = self.config
+        
+        num_attention_heads = config.get("num_attention_heads")
+        hidden_size = config.get("hidden_size")
+
+        head_dim = None
+        if hidden_size is not None and num_attention_heads:
+            head_dim = hidden_size // num_attention_heads
+
+        quantization = config.get("quantization") or {}
+        
+        return {
+            "model_id": self.model_id,
+            "model_revision": self.model_revision,
+            "model_type": config.get("model_type"),
+            "architectures": config.get("architectures"),
+            "vocab_size": config.get("vocab_size"),
+            "hidden_size": hidden_size,
+            "intermediate_size": config.get("intermediate_size"),
+            "num_hidden_layers": config.get("num_hidden_layers"),
+            "num_attention_heads": num_attention_heads,
+            "num_key_value_heads": config.get("num_key_value_heads"),
+            "head_dim": head_dim,
+            "max_position_embeddings": config.get(
+                "max_position_embeddings"
+            ),
+            "rope_theta": config.get("rope_theta"),
+            "rms_norm_eps": config.get("rms_norm_eps"),
+            "tie_word_embeddings": config.get(
+                "tie_word_embeddings"
+            ),
+            "quantization_bits": quantization.get("bits"),
+            "quantization_group_size": quantization.get(
+                "group_size"
+            ),
+        }
+
 
 def main():
     adapter = ModelAdapter.load(
@@ -65,6 +101,11 @@ def main():
     print("revision:", adapter.model_revision)
     print("config type:", type(adapter.config))
     print("architecture:", adapter.config.get("architectures"))
+    
+    print("\nMetadata:")
+    metadata = adapter.metadata()
+    for key, value in metadata.items():
+        print(f"{key}: {value}")
     
 if __name__ == "__main__":
     main()
