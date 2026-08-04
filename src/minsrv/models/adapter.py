@@ -71,7 +71,13 @@ class ModelAdapter:
     # TODO: Convert token IDs to text with a declared special-token policy.
     def decode_tokens(self, token_ids):
         """Convert token IDs to text with a declared special-token policy."""
-        pass
+        if hasattr(token_ids, "tolist"):
+            token_ids = token_ids.tolist()
+        
+        if (isinstance(token_ids, list) and len(token_ids) == 1 and isinstance(token_ids[0], list)):
+            token_ids = token_ids[0]
+        
+        return self.tokenizer.decode(token_ids, skip_special_tokens=False)
 
     # TODO: Return model ID, revision, dtype/quantization, vocabulary, and dimensions.
     def metadata(self):
@@ -162,6 +168,13 @@ def main():
     print("token IDs:", chat_ids)
     print("shape:", chat_ids.shape)
     print("dtype:", chat_ids.dtype)
+    
+    #decode
+    print("\nDecoded plain prompt:")
+    print(adapter.decode_tokens(plain_ids))
+
+    print("\nDecoded chat prompt:")
+    print(adapter.decode_tokens(chat_ids))
     
 if __name__ == "__main__":
     main()
