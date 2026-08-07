@@ -1,16 +1,23 @@
 """Assignment 7 scaffold: MiniServe's uncached manual greedy decoder."""
-
+import mlx.core as core
 
 # TODO: Select `[batch, vocabulary]` logits from the final sequence position.
 def select_last_position_logits(logits):
     """Select `[batch, vocabulary]` logits from the final sequence position."""
-    pass
+    logit = logits[:, -1, :]
+    
+    if (logits.ndim != 3):
+        raise ValueError(f"needed shape [B, T, V] but got {logits.shape} instead")
+    
+    return logit
 
 
 # TODO: Choose the maximum-logit token ID without using a generation helper.
 def greedy_next_token(logits):
     """Choose the maximum-logit token ID without using a generation helper."""
-    pass
+    # what the, greedy decoding is just argmax(logits) but for the V axis
+    
+    return core.argmax(logits, axis=-1)
 
 
 # TODO: Create the next full-sequence input by appending one token on sequence axis.
@@ -34,4 +41,9 @@ def generate_text(adapter, prompt, max_new_tokens):
 # TODO: Parse CLI arguments and run one deterministic prompt through MiniServe.
 def main():
     """Parse CLI arguments and run one deterministic prompt through MiniServe."""
-    pass
+    input = "What is the capital of France?"
+    
+    
+
+if __name__ == "__main__":
+    main()
