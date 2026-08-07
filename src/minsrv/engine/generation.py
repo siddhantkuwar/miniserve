@@ -23,7 +23,13 @@ def greedy_next_token(logits):
 # TODO: Create the next full-sequence input by appending one token on sequence axis.
 def append_token(token_ids, next_token_id):
     """Create the next full-sequence input by appending one token on sequence axis."""
-    pass
+    next_token_id = next_token_id[:, None]
+    #so here the token_ids is rank 2 because its [1, 36], meaning [[3123123, 323423, ...]]
+    #but next_token_id is only rank 1 [9707] so we have to make it rank 2 by just rehsaping it into [[9707]] to add after the 36th token
+    
+    appended = core.concatenate([token_ids, next_token_id], axis=1) #after appension, we now have the new token_ids.shape to be [1, 37], axis=1 bc we only wanna concat the second part
+    
+    return appended
 
 
 # TODO: Yield one structured step after each full-sequence model forward pass.
